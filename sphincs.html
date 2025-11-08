@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>SPHINCS+ 구조도</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
+      background-color: #f8faff;
+    }
+    .node circle {
+      fill: #c6e2ff;
+      stroke: #4682b4;
+      stroke-width: 2px;
+    }
+    .node text {
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .link {
+      fill: none;
+      stroke: #999;
+      stroke-width: 1.5px;
+    }
+    h2 {
+      text-align: center;
+      color: #2e4a62;
+    }
+  </style>
+</head>
+<body>
+  <h2>🌲 SPHINCS+ 구조도 (해시 기반 서명)</h2>
+  <svg width="1200" height="800"></svg>
+
+  <script>
+    const treeData = {
+      name: "SPHINCS+",
+      children: [
+        {
+          name: "WOTS+ (1회용 서명)",
+          children: [
+            { name: "개인키: 해시 시드" },
+            { name: "공개키: 해시 체인 최종값" },
+            { name: "역할: 메시지 해시 서명" }
+          ]
+        },
+        {
+          name: "Merkle Tree",
+          children: [
+            { name: "리프: WOTS+ 공개키" },
+            { name: "내부 노드: H(left || right)" },
+            { name: "루트: 상위 트리 또는 공개키" },
+            { name: "역할: 인증 경로 제공" }
+          ]
+        },
+        {
+          name: "Hypertree",
+          children: [
+            { name: "여러 Merkle 트리로 구성" },
+            { name: "한 트리의 루트 → 위 트리의 리프" },
+            { name: "역할: 대량 서명 지원" }
+          ]
+        },
+        {
+          name: "서명(Signature)",
+          children: [
+            { name: "메시지 해시 계산" },
+            { name: "WOTS+ 키 인덱스 결정" },
+            { name: "해당 WOTS+로 서명" },
+            { name: "인증경로(Merkle path) 추가" },
+            { name: "결과: [서명 + 경로 + 인덱스]" }
+          ]
+        },
+        {
+          name: "검증(Verification)",
+          children: [
+            { name: "WOTS+ 검증으로 리프 복원" },
+            { name: "Merkle path 따라 루트 계산" },
+            { name: "루트 == 공개키 루트 → 유효" }
+          ]
+        }
+      ]
+    };
+
+    const width = 1200;
+    const height = 800;
+
+    const svg = d3.select("svg")
+      .attr("width", width)
+      .attr("height", height)
+      .append("g")
+      .attr("transform", "translate(60,40)");
+
+    const treeLayout = d3.tree().size([height - 100, width - 300]);
+    const root = d3.hierarchy(treeData);
+    treeLayout(root);
+
+    // 링크 그리기
+    svg.selectAll(".link")
+      .data(root.links())
+      .join("path")
+      .attr("class", "link")
+      .attr("d", d3.linkHorizontal()
+        .x(d => d.y)
+        .y(d => d.x)
+      );
+
+    // 노드 그리기
+    const node = svg.selectAll(".node")
+      .data(root.descendants())
+      .join("g")
+      .attr("class", "node")
+      .attr("transform", d => `translate(${d.y},${d.x})`);
+
+    node.append("circle")
+      .attr("r", 20);
+
+    node.append("text")
+      .attr("dy", 4)
+      .attr("x", d => d.children ? -25 : 25)
+      .style("text-anchor", d => d.children ? "end" : "start")
+      .text(d => d.data.name);
+  </script>
+</body>
+</html>
